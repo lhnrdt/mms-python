@@ -13,7 +13,7 @@ class NotANeighborException(Exception):
         message (str): Additional message explaining the reason for the exception.
     """
 
-    def __init__(self, cell, neighbor_cell: MazeCell, message=""):
+    def __init__(self, cell: MazeCell, neighbor_cell: MazeCell, message: str = ""):
         API.setColor(*neighbor_cell.get_position(), "r")
         super().__init__("\n{}\nis not a neighbor to\n{}\n\nReason: {}".format(
             neighbor_cell, cell, message))
@@ -29,7 +29,7 @@ class PathBlockedException(Exception):
         message (str): Additional message explaining the reason for the blockage.
     """
 
-    def __init__(self, cell, neighbor_cell: MazeCell, message=""):
+    def __init__(self, cell: MazeCell, neighbor_cell: MazeCell, message: str = ""):
         API.setColor(*neighbor_cell.get_position(), "r")
         super().__init__("\n{}\nis blocked by\n{}\n\nReason: {}".format(
             neighbor_cell, cell, message))
@@ -48,7 +48,7 @@ class Mouse():
     - updating_distances: A flag indicating whether the mouse is updating distances in the maze.
     """
 
-    def __init__(self, position, direction: Direction, maze: Maze):
+    def __init__(self, position: tuple[int, int], direction: Direction, maze: Maze):
         self.position = position
         self.direction = direction
         self.maze = maze
@@ -57,7 +57,7 @@ class Mouse():
         self.visited = set()
         self.updating_distances = True
 
-    def get_position(self):
+    def get_position(self) -> tuple[int, int]:
         """
         Returns the current position of the mouse.
 
@@ -66,7 +66,7 @@ class Mouse():
         """
         return self.position
 
-    def get_direction(self):
+    def get_direction(self) -> Direction:
         """
         Returns the current direction of the mouse.
 
@@ -75,21 +75,21 @@ class Mouse():
         """
         return self.direction
 
-    def turn_left(self):
+    def turn_left(self) -> None:
         """
         Turns the mouse to the left by 90 degrees.
         """
         API.turnLeft()
         self.direction = self.direction.minus_90()
 
-    def turn_right(self):
+    def turn_right(self) -> None:
         """
         Turns the mouse 90 degrees to the right.
         """
         API.turnRight()
         self.direction = self.direction.plus_90()
 
-    def turn_around(self, left=True):
+    def turn_around(self, left: bool = True) -> None:
         """
         Turns the mouse around by making it perform two consecutive turns in the specified direction.
 
@@ -103,7 +103,7 @@ class Mouse():
             self.turn_right()
             self.turn_right()
 
-    def move_forward(self, distance=1):
+    def move_forward(self, distance: int = 1) -> None:
         """
         Move the mouse forward by the specified distance.
 
@@ -125,7 +125,7 @@ class Mouse():
             if self.updating_distances:
                 self.cell.set_confirmed_distance(True)
 
-    def turn_towards_neighbor(self, neighbor: MazeCell):
+    def turn_towards_neighbor(self, neighbor: MazeCell) -> None:
         """
         Turns the mouse towards the given neighbor cell.
 
@@ -176,26 +176,26 @@ class Mouse():
                     self.get_front()))
         return neighbors
 
-    def get_front(self):
+    def get_front(self) -> tuple[int, int]:
         """
         Returns the position of the cell in front of the mouse based on its current direction.
         """
         return self.direction.add_to_position(self.position)
 
-    def get_left(self):
+    def get_left(self) -> tuple[int, int]:
         """
         Returns the position of the cell to the left of the current position, based on the current direction.
         """
         return self.direction.minus_90().add_to_position(self.position)
 
-    def get_right(self):
+    def get_right(self) -> tuple[int, int]:
         """
         Returns the position of the cell to the right of the current cell,
         based on the current direction and position of the mouse.
         """
         return self.direction.plus_90().add_to_position(self.position)
 
-    def get_back(self):
+    def get_back(self) -> tuple[int, int]:
         """
         Returns the position that is opposite to the current direction.
 
@@ -204,7 +204,7 @@ class Mouse():
         """
         return self.direction.minus_180().add_to_position(self.position)
 
-    def get_position_from_direction(self, position, direction):
+    def get_position_from_direction(self, position: tuple[int, int], direction: tuple[int, int]) -> tuple[int, int]:
         """
         Returns the new position based on the given position and direction.
 
@@ -224,7 +224,7 @@ class Mouse():
         elif direction == Direction.WEST:
             return position[0] - 1, position[1]
 
-    def sense_walls(self):
+    def sense_walls(self) -> None:
         """
         Sense the walls in the current direction and update the maze accordingly.
         """
@@ -246,7 +246,7 @@ class Mouse():
                         self.direction.plus_90().get_API_representation())
             self.maze.set_wall(self.cell, self.direction.plus_90())
 
-    def get_best_candidate(self, reachable_neighbors):
+    def get_best_candidate(self, reachable_neighbors: list[MazeCell]) -> MazeCell:
         """
         Choose the best candidate from a list of reachable neighbors based on the following criteria:
         1. Smallest distance
@@ -261,7 +261,7 @@ class Mouse():
             The best candidate neighbor based on the defined criteria.
         """
 
-        def heuristic(neighbor): return (
+        def heuristic(neighbor: MazeCell): return (
             neighbor.get_distance(),
             1 if neighbor in self.visited else 0,
             self.get_turns(neighbor)
@@ -269,7 +269,7 @@ class Mouse():
         return min(reachable_neighbors,
                    key=heuristic)
 
-    def get_turns(self, neighbor: MazeCell):
+    def get_turns(self, neighbor: MazeCell) -> int:
         """
         Calculates the number of turns required to turn towards a neighboring cell.
 
@@ -293,7 +293,7 @@ class Mouse():
         diff = (desired_direction.value - self.direction.value) % 4
         return min(diff, 4 - diff)
 
-    def find_goal_explore(self, goal):
+    def find_goal_explore(self, goal: tuple[int, int]) -> None:
         """
         Finds the goal and explores the maze until the mouse reaches the goal.
 
@@ -314,7 +314,7 @@ class Mouse():
             self.turn_towards_neighbor(min_neighbor)
             self.move_forward()
 
-    def find_goal_fast(self, goal):
+    def find_goal_fast(self, goal: tuple[int, int]) -> None:
         """
         Finds the goal position by following the shortest path according to flood fill distances.
 
@@ -337,7 +337,7 @@ class Mouse():
             self.turn_towards_neighbor(min_neighbor)
             self.move_forward()
 
-    def follow_path(self, path: list[MazeCell]):
+    def follow_path(self, path: list[MazeCell]) -> None:
         """
         Follows the given path of MazeCells.
 
@@ -374,7 +374,7 @@ class Mouse():
                 forward_direction = self.direction
         self.updating_distances = True
 
-    def return_to_start(self, start, goal):
+    def return_to_start(self, start: tuple[int, int], goal: tuple[int, int]) -> None:
         """
         Moves the mouse back to the start position using flood fill algorithm.
 
