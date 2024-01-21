@@ -26,7 +26,7 @@ class MazeCell():
         }
         self.distance_to_goal = None
         self.distance_to_start = None
-        self.confirmedDistance = False
+        self.confirmed_distance = False
 
     def get_position(self) -> tuple[int, int]:
         """
@@ -131,7 +131,7 @@ class MazeCell():
         Returns:
             None
         """
-        self.confirmedDistance = confirmed
+        self.confirmed_distance = confirmed
         API.setColor(*self.position, "b")
 
     def distance_is_confirmed(self) -> bool:
@@ -141,7 +141,7 @@ class MazeCell():
         Returns:
             bool: True if the distance is confirmed
         """
-        return self.confirmedDistance
+        return self.confirmed_distance
 
     def __repr__(self) -> str:
         """

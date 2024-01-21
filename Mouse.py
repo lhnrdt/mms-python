@@ -204,26 +204,6 @@ class Mouse():
         """
         return self.direction.minus_180().add_to_position(self.position)
 
-    def get_position_from_direction(self, position: tuple[int, int], direction: tuple[int, int]) -> tuple[int, int]:
-        """
-        Returns the new position based on the given position and direction.
-
-        Args:
-            position (tuple): The current position as a tuple of (x, y) coordinates.
-            direction (Direction): The direction to move in.
-
-        Returns:
-            tuple: The new position as a tuple of (x, y) coordinates.
-        """
-        if direction == Direction.NORTH:
-            return position[0], position[1] + 1
-        elif direction == Direction.EAST:
-            return position[0] + 1, position[1]
-        elif direction == Direction.SOUTH:
-            return position[0], position[1] - 1
-        elif direction == Direction.WEST:
-            return position[0] - 1, position[1]
-
     def sense_walls(self) -> None:
         """
         Sense the walls in the current direction and update the maze accordingly.
@@ -312,7 +292,7 @@ class Mouse():
             # select the neighbor with the lowest distance
             min_neighbor = self.get_best_candidate(reachable_neighbors)
             self.turn_towards_neighbor(min_neighbor)
-            self.move_forward()
+            self.move_forward(1)
 
     def find_goal_fast(self, goal: tuple[int, int]) -> None:
         """
@@ -335,7 +315,7 @@ class Mouse():
             min_neighbor = self.get_best_candidate(reachable_neighbors)
 
             self.turn_towards_neighbor(min_neighbor)
-            self.move_forward()
+            self.move_forward(1)
 
     def follow_path(self, path: list[MazeCell]) -> None:
         """
@@ -358,7 +338,7 @@ class Mouse():
             next_cell = path[i + 1] if i + 1 < len(path) else None
 
             next_cell_is_infrontof_cell = next_cell.get_position(
-            ) == self.get_position_from_direction(cell.get_position(), forward_direction)
+            ) == Direction.get_position_from_direction(cell.get_position(), forward_direction)
 
             if next_cell_is_infrontof_cell:
                 times_forward += 1
@@ -396,4 +376,4 @@ class Mouse():
             min_neighbor = min(reachable_neighbors,
                                key=lambda neighbor: neighbor.get_distance(start=True))
             self.turn_towards_neighbor(min_neighbor)
-            self.move_forward()
+            self.move_forward(1)

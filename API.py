@@ -278,7 +278,7 @@ def turnRight45() -> str:
     command(args=["turnRight45"], return_type=str)
 
 
-def turnLeft45() -> str:
+def turnLeft45() -> None:
     """
     Turns the micromouse left by 45 degrees.
     Returns:

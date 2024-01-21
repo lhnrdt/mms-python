@@ -60,3 +60,24 @@ class Direction(enum.Enum):
             return position[0], position[1] - 1
         elif self == Direction.WEST:
             return position[0] - 1, position[1]
+
+    @staticmethod
+    def get_position_from_direction(position: tuple[int, int], direction: tuple[int, int]) -> tuple[int, int]:
+        """
+        Returns the new position based on the given position and direction.
+
+        Args:
+            position (tuple): The current position as a tuple of (x, y) coordinates.
+            direction (Direction): The direction to move in.
+
+        Returns:
+            tuple: The new position as a tuple of (x, y) coordinates.
+        """
+        if direction == Direction.NORTH:
+            return position[0], position[1] + 1
+        elif direction == Direction.EAST:
+            return position[0] + 1, position[1]
+        elif direction == Direction.SOUTH:
+            return position[0], position[1] - 1
+        elif direction == Direction.WEST:
+            return position[0] - 1, position[1]
