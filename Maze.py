@@ -48,8 +48,8 @@ class MazeCell():
             self.distance_to_goal = distance
 
     def set_confirmed_distance(self, confirmed):
-        API.setColor(*self.position, "b")
         self.confirmedDistance = confirmed
+        API.setColor(*self.position, "b")
 
     def distance_is_confirmed(self):
         return self.confirmedDistance
@@ -109,7 +109,6 @@ class Maze():
 
         # Set the goal cell to have distance 0
         self.get_cell(goal).set_distance(0, start=start)
-        self.get_cell(goal).set_confirmed_distance(True and not start)
         if draw:
             API.setText(*goal, "0")
 
@@ -166,6 +165,7 @@ class Maze():
         return string
 
     def find_fastest_path(self, start, goal, draw=True) -> list[MazeCell]:
+
         # A* search
         # open_set is a priority queue of (cost, cell, path)
         open_set = [(0, self.get_cell(start), [])]
@@ -203,13 +203,19 @@ class Maze():
             candidate_cells = list(
                 filter(lambda cell: cell.distance_is_confirmed(), candidate_cells))
 
+            API.log("\nCurrent cell: {}".format(current_cell))
+            API.log("Choosing from {} candidate cells".format(
+                len(candidate_cells)))
+
             for neighbor in candidate_cells:
 
                 # calculate the cost of the neighbor
                 corners = self.count_corners(path + [current_cell, neighbor])
                 distance = neighbor.get_distance()
-                added_cost = self.cost(corners, distance)
+                added_cost = self.path_cost(corners, distance)
                 new_cost = cost + added_cost
+                API.log("{}: corners: {}, distance: {}".format(neighbor,
+                                                               corners, distance))
 
                 # add the neighbor to the open set
                 heapq.heappush(
@@ -221,8 +227,10 @@ class Maze():
         # If there are no more cells to visit, return None
         return None
 
-    def cost(self, corners, distance):
-        return corners + distance + 0.1 * (corners + distance)
+    def path_cost(self, corners, distance):
+        CORNER_WEIGHT = 2
+        DISTANCE_WEIGHT = 1
+        return CORNER_WEIGHT * corners + DISTANCE_WEIGHT * distance
 
     def count_corners(self, path: list[MazeCell]):
         return sum(1 for i in range(1, len(path) - 1) if not self.is_straight(path[i - 1].get_position(),

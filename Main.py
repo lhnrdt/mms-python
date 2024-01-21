@@ -6,11 +6,12 @@ from Mouse import Mouse
 
 def main():
     dimensions = (API.mazeWidth(), API.mazeHeight())
-    # goal = (r.randint(0, dimensions[0] - 1),
-    # r.randint(0, dimensions[1] - 1))
+    import random as r
+    goal = (r.randint(0, dimensions[0] - 1),
+            r.randint(0, dimensions[1] - 1))
     # dimensions = (5, 5)
     start = (0, 0)
-    goal = (dimensions[0] // 2, dimensions[1] // 2)
+    # goal = (dimensions[0] // 2, dimensions[1] // 2)
     API.log("Goal: {}".format(goal))
     API.setColor(*goal, "g")
     maze = Maze(*dimensions)
