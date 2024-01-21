@@ -26,7 +26,7 @@ class MazeCell():
         }
         self.distance_to_goal = None
         self.distance_to_start = None
-        self.confirmed_distance = False
+        self.distance_is_confirmed = False
 
     def get_position(self) -> tuple[int, int]:
         """
@@ -121,7 +121,7 @@ class MazeCell():
         else:
             self.distance_to_goal = distance
 
-    def set_confirmed_distance(self, confirmed) -> None:
+    def set_distance_is_confirmed(self, confirmed) -> None:
         """
         Sets the the distance to the goal as confirmed.
 
@@ -131,17 +131,17 @@ class MazeCell():
         Returns:
             None
         """
-        self.confirmed_distance = confirmed
+        self.distance_is_confirmed = confirmed
         API.setColor(*self.position, "b")
 
-    def distance_is_confirmed(self) -> bool:
+    def get_distance_is_confirmed(self) -> bool:
         """
         Checks if the distance is confirmed, meaning that the mouse has explored the cell.
 
         Returns:
             bool: True if the distance is confirmed
         """
-        return self.confirmed_distance
+        return self.distance_is_confirmed
 
     def __repr__(self) -> str:
         """
@@ -416,7 +416,7 @@ class Maze():
 
             # remove cells with unconfirmed distances
             candidate_cells = list(
-                filter(lambda cell: cell.distance_is_confirmed(), candidate_cells))
+                filter(lambda cell: cell.get_distance_is_confirmed(), candidate_cells))
 
             # API.log("\nCurrent cell: {}".format(current_cell))
             # API.log("Choosing from {} candidate cells".format(

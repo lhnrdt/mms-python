@@ -123,7 +123,7 @@ class Mouse():
             self.cell = self.maze.get_cell(self.position)
             self.visited.add(self.cell)
             if self.updating_distances:
-                self.cell.set_confirmed_distance(True)
+                self.cell.set_distance_is_confirmed(True)
 
     def turn_towards_neighbor(self, neighbor: MazeCell) -> None:
         """
@@ -286,7 +286,7 @@ class Mouse():
         while self.position != goal:
             self.sense_walls()
             self.maze.update_flood_fill_distances(goal)
-            self.cell.set_confirmed_distance(True)
+            self.cell.set_distance_is_confirmed(True)
             reachable_neighbors = self.get_reachable_neighbors()
 
             # select the neighbor with the lowest distance
@@ -309,7 +309,7 @@ class Mouse():
 
             # remove unconfirmed neighbors
             reachable_neighbors = list(
-                filter(lambda neighbor: neighbor.distance_is_confirmed(), reachable_neighbors))
+                filter(lambda neighbor: neighbor.get_distance_is_confirmed(), reachable_neighbors))
 
             # select the neighbor with the lowest distance
             min_neighbor = self.get_best_candidate(reachable_neighbors)
