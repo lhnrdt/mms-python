@@ -2,6 +2,7 @@ import API
 from Direction import Direction
 from Maze import Maze
 from Mouse import Mouse
+from time import sleep
 
 
 def main():
@@ -16,22 +17,27 @@ def main():
     API.setColor(*goal, "g")
 
     maze = Maze(*dimensions)
+
     mouse = Mouse(start, direction=Direction.NORTH, maze=maze)
 
     API.log("Starting mouse exploration")
     mouse.find_goal_explore(goal)
+    # sleep(3)
 
     API.log("Starting mouse return to start")
     mouse.return_to_start(start, goal)
+    # sleep(3)
+    API.log(maze.get_straightline_reachable((4, 11)))
 
-    API.log("Starting mouse follow path")
-    fastest_path = maze.find_fastest_path(start, goal)
-    mouse.follow_path(fastest_path)
+    # API.log("Starting mouse follow path")
+    # fastest_path = maze.find_fastest_path(start, goal)
+    # mouse.follow_path(fastest_path)
+    # sleep(3)
 
-    API.log("Starting mouse fast goal search")
-    mouse.find_goal_fast(goal)
+    # API.log("Starting mouse fast goal search")
+    # mouse.find_goal_fast(goal)
 
-    API.log("Mouse found goal")
+    # API.log("Mouse found goal")
 
 
 if __name__ == "__main__":

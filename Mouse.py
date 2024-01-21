@@ -2,6 +2,8 @@ from Direction import Direction
 from Maze import Maze, MazeCell
 import API
 
+from collections import deque
+
 
 class NotANeighborException(Exception):
     """
@@ -47,6 +49,14 @@ class Mouse():
     - visited: A set of cells that the mouse has visited.
     - updating_distances: A flag indicating whether the mouse is updating distances in the maze.
     """
+
+    MAX_SPEED_M_PER_S = 1.5
+    MAX_ACCELERATION_M_PER_S2 = 2
+    MAX_NEG_ACCELERATION_M_PER_S2 = 1.5
+
+    D_MIN_MAX_ACC = \
+        MAX_SPEED_M_PER_S ** 2 / (2 * MAX_ACCELERATION_M_PER_S2) + \
+        MAX_SPEED_M_PER_S ** 2 / (2 * MAX_NEG_ACCELERATION_M_PER_S2)
 
     def __init__(self, position: tuple[int, int], direction: Direction, maze: Maze):
         self.position = position
@@ -285,7 +295,8 @@ class Mouse():
         """
         while self.position != goal:
             self.sense_walls()
-            self.maze.update_flood_fill_distances(goal)
+            # self.maze.update_flood_fill_distances(goal)
+            self.update_flood_fill_distances_dynamic(goal, returning=False)
             self.cell.set_distance_is_confirmed(True)
             reachable_neighbors = self.get_reachable_neighbors()
 
@@ -367,9 +378,14 @@ class Mouse():
         """
         while self.position != start:
             self.sense_walls()
-            self.maze.update_flood_fill_distances(goal, start=False, draw=True)
-            self.maze.update_flood_fill_distances(
-                start, start=True, draw=False)
+            self.update_flood_fill_distances_dynamic(
+                goal, returning=False, draw=True)
+            self.update_flood_fill_distances_dynamic(
+                start, returning=True, draw=False)
+            # self.maze.update_flood_fill_distances(
+            #     goal, returning=False, draw=True)
+            # self.maze.update_flood_fill_distances(
+            #     start, returning=True, draw=False)
             reachable_neighbors = self.get_reachable_neighbors()
 
             # select the neighbor with the lowest distance
@@ -377,3 +393,52 @@ class Mouse():
                                key=lambda neighbor: neighbor.get_distance(start=True))
             self.turn_towards_neighbor(min_neighbor)
             self.move_forward(1)
+
+    @staticmethod
+    def calculate_travel_time(n_cells) -> float:
+        """
+        Calculates the travel time between two positions.
+
+        Args:
+            n_cells (int): The number of cells to travel.
+
+        Returns:
+            float: The travel time between the two positions.
+        """
+        distance_m = n_cells * MazeCell.CELL_SIZE_CM / 100
+
+        if distance_m >= Mouse.D_MIN_MAX_ACC:
+            return Mouse.MAX_SPEED_M_PER_S / Mouse.MAX_ACCELERATION_M_PER_S2 + \
+                (distance_m - .5 * Mouse.MAX_SPEED_M_PER_S ** 2 * (1/Mouse.MAX_ACCELERATION_M_PER_S2 +
+                 1/Mouse.MAX_NEG_ACCELERATION_M_PER_S2)) / Mouse.MAX_SPEED_M_PER_S + \
+                Mouse.MAX_SPEED_M_PER_S / Mouse.MAX_NEG_ACCELERATION_M_PER_S2
+        else:
+            return 2 * (distance_m / (0.5 * Mouse.MAX_ACCELERATION_M_PER_S2 +
+                                      0.5 * Mouse.MAX_NEG_ACCELERATION_M_PER_S2)) ** 0.5
+
+    def update_flood_fill_distances_dynamic(self, goal: tuple[int, int], returning=False, draw=True) -> None:
+        for cell in self.maze.cells:
+            cell.set_distance(None, returning=returning)
+        if draw:
+            API.clearAllText()
+
+        self.maze.get_cell(goal).set_distance(0, returning=returning)
+        if draw:
+            API.setText(*goal, "0")
+
+        queue = deque([(self.maze.get_cell(goal))])
+        while queue:
+            cell = queue.popleft()
+            reachable_neighbors_in_straight_line = self.maze.get_straightline_reachable(
+                cell.get_position())
+
+            for neighbor in reachable_neighbors_in_straight_line:
+                if neighbor.get_distance(start=returning) is None:
+
+                    distance_penalty = Mouse.calculate_travel_time(Maze.get_distance_between_positions(cell.get_position(), neighbor.get_position()))
+                    distance = cell.get_distance(start=returning) + distance_penalty
+                    neighbor.set_distance(distance, returning=returning)
+
+                    if draw:
+                        API.setText(*neighbor.get_position(), str(distance))
+                    queue.append(neighbor)

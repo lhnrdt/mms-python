@@ -81,3 +81,25 @@ class Direction(enum.Enum):
             return position[0], position[1] - 1
         elif direction == Direction.WEST:
             return position[0] - 1, position[1]
+
+    @staticmethod
+    def calculate_direction(from_position: tuple[int, int], to_position: tuple[int, int]) -> "Direction":
+        """
+        Calculates the direction from the first position to the second position.
+
+        Args:
+            from_position (tuple): The position to calculate the direction from.
+            to_position (tuple): The position to calculate the direction to.
+
+        Returns:
+            Direction: The direction from the first position to the second position.
+        """
+        if from_position[0] == to_position[0]:
+            if from_position[1] < to_position[1]:
+                return Direction.NORTH
+            else:
+                return Direction.SOUTH
+        elif from_position[0] < to_position[0]:
+            return Direction.EAST
+        else:
+            return Direction.WEST

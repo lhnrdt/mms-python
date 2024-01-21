@@ -16,6 +16,8 @@ class MazeCell():
         confirmedDistance (bool): Whether the distance to the goal has been confirmed.
     """
 
+    CELL_SIZE_CM = 18
+
     def __init__(self, position):
         self.position = position
         self.walls = {
@@ -27,6 +29,7 @@ class MazeCell():
         self.distance_to_goal = None
         self.distance_to_start = None
         self.distance_is_confirmed = False
+        self.incoming_direction = None
 
     def get_position(self) -> tuple[int, int]:
         """
@@ -104,7 +107,7 @@ class MazeCell():
             return self.distance_to_start
         return self.distance_to_goal
 
-    def set_distance(self, distance, start=False) -> None:
+    def set_distance(self, distance, returning=False) -> None:
         """
         Set the distance from either the start or goal position.
 
@@ -116,7 +119,7 @@ class MazeCell():
         Returns:
         - None
         """
-        if start:
+        if returning:
             self.distance_to_start = distance
         else:
             self.distance_to_goal = distance
@@ -142,6 +145,27 @@ class MazeCell():
             bool: True if the distance is confirmed
         """
         return self.distance_is_confirmed
+
+    def set_incoming_direction(self, direction: Direction) -> None:
+        """
+        Sets the incoming direction for the cell.
+
+        Args:
+            direction (Direction): The incoming direction.
+
+        Returns:
+            None
+        """
+        self.incoming_direction = direction
+
+    def get_incoming_direction(self) -> Direction:
+        """
+        Gets the incoming direction for the cell.
+
+        Returns:
+            Direction: The incoming direction.
+        """
+        return self.incoming_direction
 
     def __repr__(self) -> str:
         """
@@ -247,41 +271,79 @@ class Maze():
         """
         return position[0] >= 0 and position[0] < self.width and position[1] >= 0 and position[1] < self.height
 
-    def update_flood_fill_distances(self, goal: tuple[int, int], start=False, draw=True) -> None:
-        """
-        Update the flood fill distances of all cells in the maze.
-
-        Args:
-            goal (tuple[int, int]): The coordinates of the goal cell.
-            start (bool, optional): Whether to start the flood fill from the goal cell. Defaults to False.
-            draw (bool, optional): Whether to draw the updated distances on the maze. Defaults to True.
-        """
-        # Set all cells to have no distance
+    def update_flood_fill_distances(self, goal: tuple[int, int], returning=False, draw=True) -> None:
         for cell in self.cells:
-            cell.set_distance(None, start=start)
+            cell.set_distance(None, returning=returning)
         if draw:
             API.clearAllText()
-        num_updates = 0
 
-        # Set the goal cell to have distance 0
-        self.get_cell(goal).set_distance(0, start=start)
+        self.get_cell(goal).set_distance(0, returning=returning)
         if draw:
             API.setText(*goal, "0")
 
-        # Set the distance of all cells to the distance of the previous cell + 1
         queue = deque([self.get_cell(goal)])
         while queue:
             cell = queue.popleft()
             reachable_neighbors = self.get_reachable_neighbors(
                 cell.get_position())
+
             for neighbor in reachable_neighbors:
-                if neighbor.get_distance(start=start) is None:
-                    distance = cell.get_distance(start=start) + 1
-                    neighbor.set_distance(distance, start=start)
+                if neighbor.get_distance(start=returning) is None:
+                    neighbor.set_incoming_direction(
+                        Direction.calculate_direction(neighbor.get_position(), cell.get_position()))
+
+                    direction_change_penalty = 0 if cell.get_incoming_direction(
+                    ) == neighbor.get_incoming_direction() or cell.get_incoming_direction() is None else 0
+
+                    distance_penalty = 1
+
+                    distance = cell.get_distance(
+                        start=returning) + distance_penalty + direction_change_penalty
+                    neighbor.set_distance(distance, returning=returning)
+
                     if draw:
                         API.setText(*neighbor.get_position(), str(distance))
-                    num_updates += 1
                     queue.append(neighbor)
+            # wait for 1s
+            # time.sleep(1)
+
+    def get_straightline_reachable(self, position: tuple[int, int]) -> list[MazeCell]:
+        neighbors = set()
+        API.log("Position: {}".format(position))
+        API.setColor(*position, "r")
+        for direction in Direction:
+            API.log("\n checking direction: {}".format(direction))
+            while True:
+                current_position = direction.add_to_position(
+                    position)
+                cell = self.get_cell(current_position)
+
+                # find a junction or a wall
+                while ((not self.is_junction(direction, current_position) and self.contains(current_position))
+                        or cell in neighbors) and not self.get_cell(current_position).get_wall(direction):
+                    current_position = direction.add_to_position(current_position)
+
+                API.log("\tAdding junction: {}".format(current_position))
+
+                if cell in neighbors:
+                    break
+
+                neighbors.add(cell)
+                API.setColor(*current_position, "y")
+                # time.sleep(1)
+        return neighbors
+
+    def is_junction(self, current_direction, position):
+        API.log("\tChecking position: {}".format(position))
+        has_wall_left = self.get_cell(
+            position).get_wall(current_direction.minus_90())
+        API.log("\t\thas_wall_left: {}".format(has_wall_left))
+        has_wall_right = self.get_cell(
+            position).get_wall(current_direction.plus_90())
+        API.log("\t\thas_wall_right: {}".format(has_wall_right))
+        is_junction = not has_wall_left or not has_wall_right
+        API.log("\t\tis_junction: {}".format(is_junction))
+        return is_junction
 
     def get_cell(self, position: tuple[int, int]) -> MazeCell:
         """
@@ -486,3 +548,17 @@ class Maze():
         """
         return (position2[0] - position1[0], position2[1] - position1[1]) == \
             (position3[0] - position2[0], position3[1] - position2[1])
+
+    @staticmethod
+    def get_distance_between_positions(position1: tuple[int, int], position2: tuple[int, int]) -> int:
+        """
+        Calculates the distance between two positions.
+
+        Args:
+            position1 (tuple[int, int]): The first position.
+            position2 (tuple[int, int]): The second position.
+
+        Returns:
+            int: The distance between the two positions.
+        """
+        return abs(position1[0] - position2[0]) + abs(position1[1] - position2[1])
