@@ -418,9 +418,9 @@ class Maze():
             candidate_cells = list(
                 filter(lambda cell: cell.distance_is_confirmed(), candidate_cells))
 
-            API.log("\nCurrent cell: {}".format(current_cell))
-            API.log("Choosing from {} candidate cells".format(
-                len(candidate_cells)))
+            # API.log("\nCurrent cell: {}".format(current_cell))
+            # API.log("Choosing from {} candidate cells".format(
+            #     len(candidate_cells)))
 
             for neighbor in candidate_cells:
 
@@ -429,8 +429,8 @@ class Maze():
                 distance = neighbor.get_distance()
                 added_cost = self.path_cost(corners, distance)
                 new_cost = cost + added_cost
-                API.log("{}: corners: {}, distance: {}".format(neighbor,
-                                                               corners, distance))
+                # API.log("{}: corners: {}, distance: {}".format(neighbor,
+                #                                                corners, distance))
 
                 # add the neighbor to the open set
                 heapq.heappush(
