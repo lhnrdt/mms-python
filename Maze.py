@@ -309,40 +309,20 @@ class Maze():
 
     def get_straightline_reachable(self, position: tuple[int, int]) -> list[MazeCell]:
         neighbors = set()
-        API.log("Position: {}".format(position))
-        API.setColor(*position, "r")
         for direction in Direction:
-            API.log("\n checking direction: {}".format(direction))
-            while True:
+            current_position = position
+            while not self.get_cell(current_position).get_wall(direction) and self.contains(current_position):
                 current_position = direction.add_to_position(
-                    position)
+                    current_position)
                 cell = self.get_cell(current_position)
-
-                # find a junction or a wall
-                while ((not self.is_junction(direction, current_position) and self.contains(current_position))
-                        or cell in neighbors) and not self.get_cell(current_position).get_wall(direction):
-                    current_position = direction.add_to_position(current_position)
-
-                API.log("\tAdding junction: {}".format(current_position))
-
-                if cell in neighbors:
-                    break
-
-                neighbors.add(cell)
-                API.setColor(*current_position, "y")
-                # time.sleep(1)
+                if self.is_junction(direction, current_position):
+                    neighbors.add(cell)
         return neighbors
 
-    def is_junction(self, current_direction, position):
-        API.log("\tChecking position: {}".format(position))
-        has_wall_left = self.get_cell(
-            position).get_wall(current_direction.minus_90())
-        API.log("\t\thas_wall_left: {}".format(has_wall_left))
-        has_wall_right = self.get_cell(
-            position).get_wall(current_direction.plus_90())
-        API.log("\t\thas_wall_right: {}".format(has_wall_right))
+    def is_junction(self, current_direction: Direction, position: tuple[int, int]) -> bool:
+        has_wall_left = self.get_cell(position).get_wall(current_direction.minus_90())
+        has_wall_right = self.get_cell(position).get_wall(current_direction.plus_90())
         is_junction = not has_wall_left or not has_wall_right
-        API.log("\t\tis_junction: {}".format(is_junction))
         return is_junction
 
     def get_cell(self, position: tuple[int, int]) -> MazeCell:
@@ -473,8 +453,9 @@ class Maze():
             # Add the cell to the visited set
             visited.add(current_cell)
 
-            candidate_cells = self.get_reachable_neighbors(
-                current_cell.get_position())
+            # candidate_cells = self.get_reachable_neighbors(current_cell.get_position())
+
+            candidate_cells = self.get_straightline_reachable(current_cell.get_position())
 
             # remove cells with unconfirmed distances
             candidate_cells = list(

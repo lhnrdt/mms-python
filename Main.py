@@ -27,11 +27,11 @@ def main():
     API.log("Starting mouse return to start")
     mouse.return_to_start(start, goal)
     # sleep(3)
-    API.log(maze.get_straightline_reachable((4, 11)))
+    # API.log(maze.get_straightline_reachable((4, 11)))
 
-    # API.log("Starting mouse follow path")
-    # fastest_path = maze.find_fastest_path(start, goal)
-    # mouse.follow_path(fastest_path)
+    API.log("Starting mouse follow path")
+    fastest_path = maze.find_fastest_path(start, goal)
+    mouse.follow_path(fastest_path)
     # sleep(3)
 
     # API.log("Starting mouse fast goal search")

@@ -295,8 +295,8 @@ class Mouse():
         """
         while self.position != goal:
             self.sense_walls()
-            # self.maze.update_flood_fill_distances(goal)
-            self.update_flood_fill_distances_dynamic(goal, returning=False)
+            self.maze.update_flood_fill_distances(goal)
+            # self.update_flood_fill_distances_dynamic(goal, returning=False)
             self.cell.set_distance_is_confirmed(True)
             reachable_neighbors = self.get_reachable_neighbors()
 
@@ -305,28 +305,11 @@ class Mouse():
             self.turn_towards_neighbor(min_neighbor)
             self.move_forward(1)
 
-    def find_goal_fast(self, goal: tuple[int, int]) -> None:
-        """
-        Finds the goal position by following the shortest path according to flood fill distances.
+    def calculate_fastest_path(self):
+        open_set = [(0, self.cell, [])]
+        visited = set()
 
-        Args:
-            goal: The goal position to reach.
-
-        Returns:
-            None
-        """
-        while self.position != goal:
-            reachable_neighbors = self.get_reachable_neighbors()
-
-            # remove unconfirmed neighbors
-            reachable_neighbors = list(
-                filter(lambda neighbor: neighbor.get_distance_is_confirmed(), reachable_neighbors))
-
-            # select the neighbor with the lowest distance
-            min_neighbor = self.get_best_candidate(reachable_neighbors)
-
-            self.turn_towards_neighbor(min_neighbor)
-            self.move_forward(1)
+        while open
 
     def follow_path(self, path: list[MazeCell]) -> None:
         """
@@ -338,32 +321,72 @@ class Mouse():
         Returns:
             None
         """
-        self.updating_distances = False
-        times_forward = 0
-        cell = self.cell
-        self.turn_towards_neighbor(path[1])
-        forward_direction = self.direction
+        for cell in path[1:]:
+            axis = self.turn_to_target(cell)
+            self.move_to_target_infront(cell, axis)
 
-        for i in range(len(path) - 1):
-            cell = path[i]
-            next_cell = path[i + 1] if i + 1 < len(path) else None
+    def turn_to_target(self, target: MazeCell) -> int:
+        target_position = target.get_position()
 
-            next_cell_is_infrontof_cell = next_cell.get_position(
-            ) == Direction.get_position_from_direction(cell.get_position(), forward_direction)
+        if not (target_position[0] == self.position[0] or target_position[1] == self.position[1]):
+            raise ValueError("Target is not reachable in a straight line")
 
-            if next_cell_is_infrontof_cell:
-                times_forward += 1
+        if target_position == self.position:
+            raise ValueError("Target is the same as current position")
+
+        # aligned on x-axis
+        if target_position[1] == self.position[1]:
+            if target_position[0] > self.position[0]:
+                self.turn_to_direction(Direction.EAST)
             else:
-                if times_forward > 0:
-                    self.move_forward(times_forward)
-                    API.log("Moved forward {} times".format(times_forward))
-                times_forward = 0
+                self.turn_to_direction(Direction.WEST)
+            return 0
 
-                self.turn_towards_neighbor(next_cell)
-                times_forward += 1
-                i -= 1
-                forward_direction = self.direction
-        self.updating_distances = True
+        # aligned on y-axis
+        if target_position[0] == self.position[0]:
+            if target_position[1] > self.position[1]:
+                self.turn_to_direction(Direction.NORTH)
+            else:
+                self.turn_to_direction(Direction.SOUTH)
+            return 1
+
+    def move_to_target_infront(self, target: MazeCell, axis: int) -> None:
+        target_position = target.get_position()
+        if axis == 0:
+            if target_position[0] > self.position[0]:
+                API.log("Moving forward {} cells".format(target_position[0] - self.position[0]))
+                self.move_forward(target_position[0] - self.position[0])
+            else:
+                API.log("Moving forward {} cells".format(self.position[0] - target_position[0]))
+                self.move_forward(self.position[0] - target_position[0])
+        else:
+            if target_position[1] > self.position[1]:
+                API.log("Moving forward {} cells".format(target_position[1] - self.position[1]))
+                self.move_forward(target_position[1] - self.position[1])
+            else:
+                API.log("Moving forward {} cells".format(self.position[1] - target_position[1]))
+                self.move_forward(self.position[1] - target_position[1])
+
+    def turn_to_direction(self, direction: Direction) -> None:
+        """
+        Turns the mouse to the given direction.
+
+        Args:
+            direction (Direction): The direction to turn to.
+
+        Returns:
+            None
+        """
+        if direction == self.direction:
+            return
+        elif direction == self.direction.minus_90():
+            self.turn_left()
+        elif direction == self.direction.plus_90():
+            self.turn_right()
+        elif direction == self.direction.minus_180():
+            self.turn_around()
+        else:
+            raise ValueError("Invalid direction")
 
     def return_to_start(self, start: tuple[int, int], goal: tuple[int, int]) -> None:
         """
@@ -378,14 +401,10 @@ class Mouse():
         """
         while self.position != start:
             self.sense_walls()
-            self.update_flood_fill_distances_dynamic(
+            self.maze.update_flood_fill_distances(
                 goal, returning=False, draw=True)
-            self.update_flood_fill_distances_dynamic(
+            self.maze.update_flood_fill_distances(
                 start, returning=True, draw=False)
-            # self.maze.update_flood_fill_distances(
-            #     goal, returning=False, draw=True)
-            # self.maze.update_flood_fill_distances(
-            #     start, returning=True, draw=False)
             reachable_neighbors = self.get_reachable_neighbors()
 
             # select the neighbor with the lowest distance
@@ -415,30 +434,3 @@ class Mouse():
         else:
             return 2 * (distance_m / (0.5 * Mouse.MAX_ACCELERATION_M_PER_S2 +
                                       0.5 * Mouse.MAX_NEG_ACCELERATION_M_PER_S2)) ** 0.5
-
-    def update_flood_fill_distances_dynamic(self, goal: tuple[int, int], returning=False, draw=True) -> None:
-        for cell in self.maze.cells:
-            cell.set_distance(None, returning=returning)
-        if draw:
-            API.clearAllText()
-
-        self.maze.get_cell(goal).set_distance(0, returning=returning)
-        if draw:
-            API.setText(*goal, "0")
-
-        queue = deque([(self.maze.get_cell(goal))])
-        while queue:
-            cell = queue.popleft()
-            reachable_neighbors_in_straight_line = self.maze.get_straightline_reachable(
-                cell.get_position())
-
-            for neighbor in reachable_neighbors_in_straight_line:
-                if neighbor.get_distance(start=returning) is None:
-
-                    distance_penalty = Mouse.calculate_travel_time(Maze.get_distance_between_positions(cell.get_position(), neighbor.get_position()))
-                    distance = cell.get_distance(start=returning) + distance_penalty
-                    neighbor.set_distance(distance, returning=returning)
-
-                    if draw:
-                        API.setText(*neighbor.get_position(), str(distance))
-                    queue.append(neighbor)
