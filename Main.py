@@ -2,7 +2,9 @@ import API
 from Direction import Direction
 from Maze import Maze
 from Mouse import Mouse
-from time import sleep
+
+global VERBOSE_LOGGING
+VERBOSE_LOGGING = False
 
 
 def main():

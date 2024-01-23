@@ -3,6 +3,9 @@ from Direction import Direction
 from collections import deque
 import heapq
 
+global VERBOSE_LOGGING
+VERBOSE_LOGGING = False
+
 
 class MazeCell():
     """
@@ -309,20 +312,50 @@ class Maze():
 
     def get_straightline_reachable(self, position: tuple[int, int]) -> list[MazeCell]:
         neighbors = set()
+        if VERBOSE_LOGGING:
+            API.log("Position: {}".format(position))
+            API.setColor(*position, "r")
         for direction in Direction:
+            if VERBOSE_LOGGING:
+                API.log("\n checking direction: {}".format(direction))
             current_position = position
-            while not self.get_cell(current_position).get_wall(direction) and self.contains(current_position):
-                current_position = direction.add_to_position(
-                    current_position)
-                cell = self.get_cell(current_position)
-                if self.is_junction(direction, current_position):
-                    neighbors.add(cell)
+            while True:
+                current_position = direction.add_to_position(current_position)
+                try:
+                    cell = self.get_cell(current_position)
+                except IndexError:
+                    break
+                # find a junction or a wall
+                while (not self.is_junction(direction, current_position) or cell in neighbors) \
+                        and not self.get_cell(current_position).get_wall(direction) \
+                        and self.contains(current_position):
+                    current_position = direction.add_to_position(current_position)
+
+                if VERBOSE_LOGGING:
+                    API.log("\tAdding junction: {}".format(current_position))
+
+                if cell in neighbors:
+                    break
+
+                neighbors.add(cell)
+                API.setColor(*current_position, "y")
+                # time.sleep(1)
         return neighbors
 
-    def is_junction(self, current_direction: Direction, position: tuple[int, int]) -> bool:
-        has_wall_left = self.get_cell(position).get_wall(current_direction.minus_90())
-        has_wall_right = self.get_cell(position).get_wall(current_direction.plus_90())
+    def is_junction(self, current_direction, position):
+        if VERBOSE_LOGGING:
+            API.log("\tChecking position: {}".format(position))
+        has_wall_left = self.get_cell(
+            position).get_wall(current_direction.minus_90())
+        if VERBOSE_LOGGING:
+            API.log("\t\thas_wall_left: {}".format(has_wall_left))
+        has_wall_right = self.get_cell(
+            position).get_wall(current_direction.plus_90())
+        if VERBOSE_LOGGING:
+            API.log("\t\thas_wall_right: {}".format(has_wall_right))
         is_junction = not has_wall_left or not has_wall_right
+        if VERBOSE_LOGGING:
+            API.log("\t\tis_junction: {}".format(is_junction))
         return is_junction
 
     def get_cell(self, position: tuple[int, int]) -> MazeCell:
@@ -439,8 +472,9 @@ class Maze():
             # If the cell is the goal, return the path
             if current_cell.get_position() == goal:
                 final_path = path + [current_cell]
-                API.log("Path found, distance: {}, corners: {}".format(
-                    cost, self.count_corners(final_path)))
+                if VERBOSE_LOGGING:
+                    API.log("Path found, distance: {}, corners: {}".format(
+                        cost, self.count_corners(final_path)))
                 if draw:
                     for cell in final_path:
                         API.setColor(*cell.get_position(), "y")
@@ -461,10 +495,6 @@ class Maze():
             candidate_cells = list(
                 filter(lambda cell: cell.get_distance_is_confirmed(), candidate_cells))
 
-            # API.log("\nCurrent cell: {}".format(current_cell))
-            # API.log("Choosing from {} candidate cells".format(
-            #     len(candidate_cells)))
-
             for neighbor in candidate_cells:
 
                 # calculate the cost of the neighbor
@@ -472,16 +502,16 @@ class Maze():
                 distance = neighbor.get_distance()
                 added_cost = self.path_cost(corners, distance)
                 new_cost = cost + added_cost
-                # API.log("{}: corners: {}, distance: {}".format(neighbor,
-                #                                                corners, distance))
 
                 # add the neighbor to the open set
                 heapq.heappush(
                     open_set, (new_cost, neighbor, path + [current_cell]))
 
-        API.log("No path found, path so far:")
+        if VERBOSE_LOGGING:
+            API.log("No path found, path so far:")
         for cell in path:
-            API.log(str(cell))
+            if VERBOSE_LOGGING:
+                API.log(str(cell))
         # If there are no more cells to visit, return None
         return None
 
@@ -543,3 +573,8 @@ class Maze():
             int: The distance between the two positions.
         """
         return abs(position1[0] - position2[0]) + abs(position1[1] - position2[1])
+
+
+if __name__ == "__main__":
+    maze_test = Maze(16, 16)
+    maze_test.get_straightline_reachable((8, 8))

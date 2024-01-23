@@ -309,8 +309,6 @@ class Mouse():
         open_set = [(0, self.cell, [])]
         visited = set()
 
-        while open
-
     def follow_path(self, path: list[MazeCell]) -> None:
         """
         Follows the given path of MazeCells.
@@ -434,3 +432,37 @@ class Mouse():
         else:
             return 2 * (distance_m / (0.5 * Mouse.MAX_ACCELERATION_M_PER_S2 +
                                       0.5 * Mouse.MAX_NEG_ACCELERATION_M_PER_S2)) ** 0.5
+
+    def update_flood_fill_distances_dynamic(self, goal: tuple[int, int], returning=False, draw=True) -> None:
+        for cell in self.maze.cells:
+            cell.set_distance(None, returning=returning)
+        if draw:
+            API.clearAllText()
+        API.clearAllColor()
+
+        self.maze.get_cell(goal).set_distance(0, returning=returning)
+        if draw:
+            API.setText(*goal, "0")
+
+        queue = deque([(self.maze.get_cell(goal))])
+        while queue:
+            cell = queue.popleft()
+            reachable_neighbors_in_straight_line = self.maze.get_straightline_reachable(cell.get_position())
+
+            for neighbor in reachable_neighbors_in_straight_line:
+                if neighbor.get_distance(start=returning) is None:
+
+                    distance_penalty = Mouse.calculate_travel_time(
+                        Maze.get_distance_between_positions(cell.get_position(), neighbor.get_position()))
+                    distance = cell.get_distance(
+                        start=returning) + distance_penalty
+                    neighbor.set_distance(distance, returning=returning)
+
+                    if draw:
+                        API.setText(*neighbor.get_position(), str(round(distance, 2)))
+                    queue.append(neighbor)
+
+
+if __name__ == "__main__":
+    for i in range(8):
+        print(Mouse.calculate_travel_time(i))
